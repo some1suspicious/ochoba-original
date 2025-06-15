@@ -1,0 +1,1 @@
+<!--<style type="text/css">td {border-style:solid; border-width:1px;}table {border-style:solid; border-width:3px; }</style>-->[<a href="admin.fpl?do=posts">Список постов</a>][<a href="admin.fpl?do=bans">Баны</a>]
