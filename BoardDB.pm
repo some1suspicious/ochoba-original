@@ -123,15 +123,14 @@ sub delThread{ #Удаление треда вместе с постами
 
 sub postToThread{ #добавление списка постов в тред
 	my ($self,$board,$thread,$posts,$bumplimit)= @_;
-
-	$self->{dbs}{$board}{threads}->update({_id =>int(delete $thread->{_id}) }, { 
-	'$push' => {posts=> $posts},
-	
-	($bumplimit && !(scalar(@{ $self->{dbs}{$board}{threads}->find_one({_id =>int $thread },{posts=> 1})->{posts} })>$bumplimit))
-	? ('$set' =>{ lasthit => time } ) : ()
-	
-	}, {upsert => 1});
+	my $data=$self->{dbs}{$board}{threads}->find_one({_id =>int $thread });
+	push @{$data->{posts}},@{$posts};
+  
+	$data->{lasthit}=time if($bumplimit && !(scalar(@{$data->{posts}})>$bumplimit));
+  
+	$self->{dbs}{$board}{threads}->save($data);
 }
+
 
 sub delFromThread{ #удаление списка постов из треда
 	my ($self,$board,$thread,$posts)= @_;

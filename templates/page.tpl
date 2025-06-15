@@ -44,6 +44,12 @@
 	<script type="text/javascript">set_inputs("postform")</script>
 
 	<hr /> 
+
+        <if !$thread>
+        <script type="text/javascript">
+                var hiddenThreads=get_cookie(thread_cookie);
+        </script>
+        </if>
 </if>
 
 
@@ -52,7 +58,9 @@
 <perleval %sticked=$sticked; %closed=$closed; %postscount=$postscount />
 	<loop $posts>
 		<if !$parent>
-			
+                        <div id="t<var $_id>_info" style="float:left"></div>
+                        <if !$thread><span id="t<var $_id>_display" style="float:right"><a href="javascript:threadHide('t<var $_id>')" id="togglet<var $_id>">Скрыть тред</a><ins><noscript><br/>(у вас отключен Javascript)</noscript></ins></span></if>
+                        <div id="t<var $_id>">			
 
 			<a name="<var $_id>"></a>
 			<label><input type="checkbox" name="delete" value="<var $_id>" />
@@ -78,7 +86,7 @@
 			<iframe title="YouTube video player" width="300" height="241" src="http://www.youtube.com/embed/<var $youtube>" frameborder="0"></iframe>
 			</if>
 			
-			<if 1<@{$files} and %td=1 ><table><tr></if>
+			<if 1<@{$files} and %td=1 ><table class="postfiles"><tr></if>
 			<loop $files>
 				<if %td><td></else/><br/></if>
 				<span class="filesize">Файл: <a target="_blank" href="/<var %SECTION>/<var $filepath>"><var $filename></a>
@@ -92,7 +100,7 @@
 					</a>
 					</span>
 				</else/>
-						<div class="nothumb"><a target="_blank" href="<var $filepath>">Нету превью.</a></div>
+						<div class="nothumb"><a target="_blank" href="<var $filepath>">Нет превью</a></div>
 				</if>
 				<if %td></td></if>
 			</loop>
@@ -110,7 +118,14 @@
 				Всего <var %postscount> сообщений. Нажмите [Ответ], чтобы увидеть тред целиком.
 				</span>
 			</if>
-		
+                        <if !$thread>
+                                <script type="text/javascript">
+                                        if (hiddenThreads.indexOf('t<var $_id>,') != -1)
+                                        {
+                                                toggleHidden('t<var $_id>');   
+                                        }
+                                </script>
+                        </if>
 		</else/>
 			<table><tbody><tr><td class="doubledash">&gt;&gt;</td>
 			<td class="reply" id="reply<var $_id>">
@@ -132,7 +147,7 @@
 			<iframe title="YouTube video player" width="300" height="241" src="http://www.youtube.com/embed/<var $youtube>" frameborder="0"></iframe>
 			</if>
 			
-			<if 1<@{$files} and %td=1 ><table><tr></if>
+			<if 1<@{$files} and %td=1 ><table class="postfiles"><tr></if>
 			<loop $files>
 				<if %td><td></else/><br/></if>
 				<span class="filesize">Файл: <a target="_blank" href="/<var %SECTION>/<var $filepath>"><var $filename></a>
@@ -146,7 +161,7 @@
 					</a>
 					</span>
 				</else/>
-						<div class="nothumb"><a target="_blank" href="<var $filepath>">Нету превью.</a></div>
+						<div class="nothumb"><a target="_blank" href="<var $filepath>">Нет превью</a></div>
 				</if>
 				<if %td></td></if>
 			</loop>
@@ -161,6 +176,7 @@
 			
 		</if>
 	</loop>
+	</div>  
 	<if %thread><div id="fastload"><!--сюда подгружаются посты--></div></if>
 	<br clear="left" /><hr />
 	<perleval %postscount=0 />
@@ -169,7 +185,7 @@
 
 <table class="userdelete"><tbody><tr><td>
 <input type="hidden" name="task" value="delete" />
-Удалить пост [<label><input type="checkbox" name="fileonly" value="on" />Только файл.</label>]<br />
+Удалить пост [<label><input type="checkbox" name="fileonly" value="on" />Только файл</label>]<br />
 Пароль <input type="password" name="password" size="8" />
 <input value="Удалить" type="submit" /></td></tr></tbody></table>
 </form>

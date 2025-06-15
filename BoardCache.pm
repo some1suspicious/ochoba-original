@@ -10,7 +10,7 @@ use Image::Size;
 ##############
 sub new { 
 	my $self = $_[1];
-	die 'BoardCache: Undefined db or mem or tpl or SECTIONS' unless($self->{db} and $self->{mem} and $self->{tpl} and $self->{SECTIONS});
+	die 'BoardCache: Undefined db or mem or SECTIONS' unless($self->{db} and $self->{mem} and $self->{SECTIONS});
 	
 	$self->{memext}='memhtml' unless($self->{memext});
 	$self->{thrext}='html' unless($self->{thrext});
@@ -56,7 +56,7 @@ sub page{ #ребилд страницы
 	}
 	
 	# ребилдим
-	  $_=scalar $self->{tpl}{$SECTION}->page({
+	  $_=scalar $self->{SECTIONS}{$SECTION}{TPL}->page({
 		threads=>$self->{db}->getPage($SECTION,$page,$self->{SECTIONS}{$SECTION}{THREADS_PER_PAGE},$self->{SECTIONS}{$SECTION}{REPLIES_PER_THREAD}),
 		
 		pages=>[0...$pagescount],
@@ -79,7 +79,7 @@ sub build_thread{ #ребилд треда
 	flock($fhandle,LOCK_EX);
 	binmode($fhandle);
 	
-	print $fhandle $self->{tpl}{$SECTION}->page({
+	print $fhandle $self->{SECTIONS}{$SECTION}{TPL}->page({
 		thread=>$thread,
 		threads=>[$data],
 		},{ %{$self->{SECTIONS}{$SECTION}}, thread=>$thread, %{$data}});

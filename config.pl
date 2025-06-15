@@ -1,19 +1,23 @@
 use utf8;
+use Template;
 
 my %SETTINGS;
+$SETTINGS{CAP_FONT}='/home/admin/ochoba/captcha/DigitalStripCyrillic.ttf';
+$SETTINGS{TPL}=Template->new({tmpl_dir =>'templates/'});
+$SETTINGS{THREADS}=1;
+
 $SETTINGS{TITLE} = 'Тире.ч - ';
 $SETTINGS{ REPLIES } = 1;
 $SETTINGS{ UPFILES } = 5;		# Разрешить добавление файлов
 $SETTINGS{ THREADS_WITH_FILES } = 0; #создавать треды только с файлами
 $SETTINGS{ MAX_FIELD_LENGTH } = 50;
-$SETTINGS{ MAX_COMMENT_LENGTH }=1024*4;
+$SETTINGS{ MAX_COMMENT_LENGTH }= 1024*20;
 
 $SETTINGS{ BUMPLIMIT } = 500;
 
 $SETTINGS{ THREADS_PER_PAGE } = 25;			# тредов на странице
 $SETTINGS{ REPLIES_PER_THREAD } = 5;			# показывать на странице последних ответов из треда
-$SETTINGS{ MAX_PAGES } = 0; # количество страниц. 0 - не ограничивать.
-$SETTINGS{ ENABLE_CAPTCHA } =1;  #использовать капчу
+$SETTINGS{ ENABLE_CAPTCHA } = 1;  #использовать капчу
 
 $SETTINGS{ MAX_FILESIZE } = 1024*1024*9;
 
@@ -27,7 +31,7 @@ $SETTINGS{ AMAX_H } = 10000;	# максимальная длинна
 $SETTINGS{ FORCED_ANON } = 0; #принудительная анонимность
 $SETTINGS{ DEFAULT_NAME } = 'Аноним'; # Имя, если имя не задано или принудительная анонимность
 $SETTINGS{ UNIQUE_IDS } = 0; #дополнительный трипкод - хеш из ip
-$SETTINGS{ YOUTUBE } = 1; #потинг видео
+$SETTINGS{ YOUTUBE } = 1; #постинг видео
 
 $SETTINGS{ BBCODE } ={
 
@@ -47,7 +51,12 @@ hide	=> ['<span class="hide">',		'</span>'],
 u		=> ['<span class="u">',			'</span>'],
 o		=> ['<span class="o">',			'</span>'],
 spoiler	=> ['<span class="spoiler">',	'</span>'],
-redfont => ['<font color="red">',	'</font>'],
+#'0000FF' => ['<font color="#0000FF">',	'</font>'],
+#'00FF00' => ['<font color="#00FF00">',	'</font>'],
+#'FF0000' => ['<font color="#FF0000">',	'</font>'],
+#'rghost' => [ q|<a onload="this.href = 'http'+'://plasmon.rghost.ru/'+$(this).html+'.image'; 
+#$(this).html('<img 
+#src=http:'+'//plasmon.rghost.ru/'.$(this).html.'.image" />')" >| , q|</a>|],
 };
 
 
@@ -89,6 +98,12 @@ $SETTINGS{FILETYPES} = {
 #	png => '.',
 };
 
+$SETTINGS{CAP_WORDS}={
+	0 => [qw/А Б В Г Д Е Ж З И К Л М Н О П Р С Т У Ф Х Ц Ч Ш Ы Э Ю Я/],
+	1 => [qw/ЗДЕСЬ НАПИШИТЕ СЛОВА КОТОРЫЕ БУДУТ ИСПОЛЬЗОВАТЬСЯ В КАПЧЕ ЧЕРЕЗ ПРОБЕЛ/],
+	2 => ['А','Б','В','Г','Д','Е','Ж','З','И','К','Л','М','Н','О','П','Р','С','Т','У','Ф','Х','Ц','Ч','Ш','Ы','Э','Ю','Я',undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef],
+	3 => ['А','Б','В','Г','Д','Е','Ж','З','И','К','Л','М','Н','О','П','Р','С','Т','У','Ф','Х','Ц','Ч','Ш','Ы','Э','Ю','Я',undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef],
+};
 
 
 $SETTINGS{LANG}={
@@ -117,6 +132,7 @@ TOO_FAST => 'Слишком быстрый постинг. Введите кап
 SEARCH_TOO_FAST => 'Пользоваться поиском разрешается не чаще, чем раз в 5 секунд',
 SEARCH_TOO_LONG => 'Слишком длинный поисковой запрос',
 SEARCH_REGEXP_ERROR => 'Ошибка в регулярном выражении',
+NO_THREADS => 'Тут нельзя содавать треды',
 };
 
 $SETTINGS{stylesheets}=[map
@@ -137,20 +153,16 @@ $SETTINGS{stylesheets}=[map
 	} glob('css/*.css')];
 
 
-
-
-
-
 sub SETTINGS_DEFAULTS {$SETTINGS{SECTION} = 'error'; return \%SETTINGS;}
 
 sub GLOBAL_SETTINGS{
 	return {
-	ANTIDDOS_RCOUNT =>20000,
-	MODER =>'test',
-	#ADMIN =>'',
-	SECRET =>'ncvjdj38fnmg7dnsh2kf9n57fbd6senf74hwn1jf74jg0ghjbodfhd7gfjf74ng7rnv67d3nfjd54njfg6f7en4kkf6',
+	ANTIDDOS_RCOUNT =>20000000,
+	MODER =>'ПАСС ДЛЯ АДМИНКИ',
+	ADMIN =>'',
+	SECRET =>'123321',
 	TRIPKEY => chr(0x2665),
-	ACAPTCAHA_TIMEOUT => 1,
+	ACAPTCAHA_TIMEOUT => 60,
 	SEARCH_TIMEOUT => 5
 	}
 }
@@ -158,14 +170,21 @@ sub GLOBAL_SETTINGS{
 sub GET_SECTIONS{
 return {
 
-    test => {%SETTINGS,
-        TITLE => 'Тире.ч - Тестовый раздел',
-        },
-
     b => {%SETTINGS,
-        TITLE => 'Тире.ч - Бред',
+        TITLE => 'site.site.com - Бред',
         },
-   
+		#### пример с флэшем ####
+	f => {%SETTINGS,
+        TITLE => 'site.com - Flash',
+		FILETYPES =>  {%{$SETTINGS{FILETYPES}}, swf => '/swf.png' },
+		MAX_FILESIZE  =>  1024*1024*30
+        },
+	ls => {%SETTINGS,
+        TITLE => 'site.com - exe файлы.',
+		FILETYPES =>  {%{$SETTINGS{FILETYPES}}, exe => '/exe.png', zip => '/zip.png' },
+		MAX_FILESIZE  => 1024*1024*100,
+		DEFAULT_NAME => 'Лоля'
+        },
 	};
 }
 1;

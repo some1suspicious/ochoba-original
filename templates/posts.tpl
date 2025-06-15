@@ -16,7 +16,7 @@
 					</a>
 					</span>
 				</else/>
-						<div class="nothumb"><a target="_blank" href="<var $image>">Нету превью.</a></div>
+						<div class="nothumb"><a target="_blank" href="<var $image>">Нет превью</a></div>
 				</if></span>
 				</td>
 			</loop>
@@ -89,7 +89,7 @@
 					</a>
 					</span>
 				</else/>
-						<div class="nothumb"><a target="_blank" href="<var $image>">Нету превью.</a></div>
+						<div class="nothumb"><a target="_blank" href="<var $image>">Нет превью</a></div>
 				</if></span>
 				</td>
 			</loop>

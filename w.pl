@@ -10,7 +10,7 @@ use Benchmark qw(:all) ;
 use Image::Size;
 
 BEGIN {require 'config.pl'; }
-BEGIN {require 'utils.pl'; }
+BEGIN {require 'pedalutils.pl'; }
 
 print "Ochoba loaded!\n";
 
@@ -44,8 +44,7 @@ $GLOBALSETTINGS{SECTIONS}=[keys %SECTIONS];
 use BoardDB; #БД
 my  $db = BoardDB->new({boards=>$GLOBALSETTINGS{SECTIONS}, datestyle=>'%s %02d %s %04d %02d:%02d:%02d'});
 
-use SimpleCtemplate; #Шаблонизатор
-my $tpl=SimpleCtemplate->new({tmpl_dir =>'templates/'});
+
 
 use Cache::Memcached::Fast; #Мемкеш
 my  $mem  =  Cache::Memcached::Fast->new({servers  => ['127.0.0.1:11211']});
@@ -57,14 +56,12 @@ my $rp = RealplexorApi->new({login => undef, password=>'', host=>$_ ,port=>10010
 
  
  
-my $secttpl; # тут можно задать разные шаблоны для разных разделов
-$secttpl->{$_}=$tpl for(keys %SECTIONS); 
+
 
 use BoardCache; # Кеширование
 my $cache = BoardCache->new({
 	db => $db,
 	mem => $mem,
-	tpl => $secttpl,
 	extpaths =>{html => 'res',jpg => 'src',jpeg => 'src',gif => 'src',png => 'src'},
 	SECTIONS => \%SECTIONS
 });
@@ -78,7 +75,7 @@ my $kostyl;
 if($^O=~/win/i){$kostyl='FCGI::accept() >= 0';}else{$kostyl='$request ->Accept() >= 0';} #СПЕРМОКОСТЫЛЬ! #потом убрать...
 
 while(eval $kostyl) { 
-#my $tpl=SimpleCtemplate->new({tmpl_dir =>'templates/',global=>{}});
+#my $SECTIONS{$SECTION}{TPL}=SimpleCtemplate->new({tmpl_dir =>'templates/',global=>{}});
 eval { # ловим ошибки
 ###AntiDDOS
 	$_=$mem->get('addos'.$ENV{REMOTE_ADDR});
@@ -138,11 +135,11 @@ elsif($SECTIONS{$SECTION}{CONTROLLER} eq 'rebuild3745'){ # ребилд кеше
 next;}
 elsif($SECTIONS{$SECTION}{CONTROLLER} eq 'delete'){###Удаление постов###
 
-	my $password=$query->param('password');
+	my $password=$query->param("password");
 	make_error($SECTIONS{$SECTION}{LANG}{NO_PASSWORD}) unless($password);
 	  
-	my $fileonly=$query->param('fileonly');
-	my @posts=$query->param('delete');
+	my $fileonly=$query->param("fileonly");
+	my @posts=$query->param("delete");
 	  
 	next if(scalar(@posts)>30);
 	  
@@ -183,7 +180,7 @@ elsif($SECTIONS{$SECTION}{CONTROLLER} eq 'captcha'){###Капча###
 
 	my($hash,$word);
 	unless($hash=$mem->get('captcha'.$ENV{REMOTE_ADDR})){
-		($hash,$word)=create_captcha();
+		($hash,$word)=create_captcha($SECTIONS{$SECTION}{CAP_FONT},$SECTIONS{$SECTION}{CAP_WORDS});
 		$mem->set_multi(['captcha'.$ENV{REMOTE_ADDR},$hash,3600],['captchahash'.$hash,$word,3600]);
 	}
 
@@ -244,7 +241,7 @@ sub search {
 	local $_=qr/$search(?!=[^<]*>)/i;
 	
 	make_http_header();
-	print $tpl->search({
+	print $SECTIONS{$SECTION}{TPL}->search({
 		posts=>[$db->{dbs}{$SECTION}{posts}->find({ comment => $_ },{sort_by=>{_id=>-1}, limit => 50})->all],
 		search => $search,
 		
@@ -257,11 +254,22 @@ sub post{
 	my ($SECTION,$data)=@_;
 	Encode::_utf8_on($_) for %{$data};
 
+	
+	$ENV{REMOTE_ADDR}=$ENV{HTTP_X_FORWARDED_FOR}.'proxyfied' if($ENV{HTTP_X_FORWARDED_FOR});
 #Проверяем данные
-	make_error($SECTIONS{$SECTION}{LANG}{NO_REPLIES}) unless($SECTIONS{$SECTION}{REPLIES}); #нельзя постить если раздел закрытый
+	$_=check_admin();
+	make_error($SECTIONS{$SECTION}{LANG}{NO_REPLIES}) unless($SECTIONS{$SECTION}{REPLIES} or $_); #нельзя постить если раздел закрытый
+	make_error($SECTIONS{$SECTION}{LANG}{NO_THREADS}) unless($SECTIONS{$SECTION}{THREADS} or $_); #нельзя создавать треды, если это отключено
+	
+	
 	make_error($SECTIONS{$SECTION}{LANG}{NO_FILES}) if(!$SECTIONS{$SECTION}{UPFILES} and @{$data->{files}}); # проверка на файлы
 	
 	make_error($SECTIONS{$SECTION}{LANG}{UNUSUAL}) if($data->{parent}=~/[^0-9]/ or $data->{name}=~/[\n\r]/ or $data->{email}=~/[\n\r]/ or $data->{subject}=~/[\n\r]/ or length($data->{parent})>15); #проверка на недопустимые символы
+	
+	
+	
+	######ня
+	
 	
 	make_error($SECTIONS{$SECTION}{LANG}{TOOLONG}) if(
 	length($data->{email})>$SECTIONS{$SECTION}{MAX_FIELD_LENGTH} 
@@ -272,7 +280,7 @@ sub post{
 	
 	
 	#поверка капчи
-	if($SECTIONS{$SECTION}{ENABLE_CAPTCHA}){
+	if($SECTIONS{$SECTION}{ENABLE_CAPTCHA} and !check_admin()){
 	
 		my $acap=$mem->get_multi('cadapt'.$ENV{REMOTE_ADDR},'clast'.$ENV{REMOTE_ADDR});
 		$mem->delete('cadapt'.$ENV{REMOTE_ADDR}) if($acap->{'clast'.$ENV{REMOTE_ADDR}});
@@ -292,7 +300,8 @@ sub post{
 	make_error($SECTIONS{$SECTION}{LANG}{THREAD_NOT_EXISTS}) if($data->{parent} and !$db->checkThread($SECTION,$data->{parent})); #поверка на сущестование треда
 	
 	$data->{youtube}='' unless ($SECTIONS{$SECTION}{YOUTUBE});
-	$data->{youtube}=$data->{youtube}=~m%(http://)?.{0,5}?youtube.{2,5}?/.{0,6}?\?v=([A-z0-9]*).*?%i ? $2 : $data->{youtube}=~m%([A-z0-9]{5,20})%i ? $1 : ''; #получаем id видео
+	$data->{youtube}=$data->{youtube}=~m%(http://)?.{0,5}?youtube.{2,5}?/.{0,6}?\?v=([A-z0-9_-]*).*?%i 
+? $2 : $data->{youtube}=~m%([A-z0-9_-]{5,20})%i ? $1 : ''; #получаем id видео
 	
 	$data->{files}=[] if($data->{youtube}); #если есть видео файлы не загружаются
 	
@@ -321,11 +330,12 @@ sub post{
 	
 	
 ##### Обработка текста #######
-	filter_html(\$data->{email});
-	filter_html(\$data->{subject});
-	filter_html(\$data->{name});
-	filter_html(\$data->{comment});
-	
+	#unless(check_admin()){
+		filter_html(\$data->{email});
+		filter_html(\$data->{subject});
+		filter_html(\$data->{name});
+		filter_html(\$data->{comment});
+	#}
 	##
 	$data->{name}=$SECTIONS{$SECTION}{DEFAULT_NAME} if(!$data->{name} or $SECTIONS{$SECTION}{FORCED_ANON});
 	
@@ -341,8 +351,8 @@ sub post{
 		next unless($_ = $db->{dbs}{$sect}{posts}->find_one({_id =>int $num }));
 		$_->{parent}=$_->{_id} unless($_->{parent});
 		
-		$sect.='/';
-		$data->{comment}=~s%(?<!">)&gt;&gt;$fsect$num(?![0-9])%$1<a href="/${sect}res/$_->{parent}.html#$_->{_id}" onclick="highlight($_->{_id})">&gt;&gt;$fsect$_->{_id}<\/a>%;
+		$sect.='/'; #|(?:>>)
+		$data->{comment}=~s%(?<!">)(?:&gt;&gt;)$fsect$num(?![0-9])%$1<a href="/${sect}res/$_->{parent}.html#$_->{_id}" onclick="highlight($_->{_id})">&gt;&gt;$fsect$_->{_id}<\/a>%;
 	}
 	
 	$data->{comment}=do_mark($SECTION,$data->{comment});
@@ -352,6 +362,35 @@ sub post{
 	$mem->delete('captcha'.$ENV{REMOTE_ADDR}); #сбрасываем капчу
 	$data->{ip}=$ENV{REMOTE_ADDR}; #сохраняем ip
 
+	
+	
+	#### Пекацефальные фильтры
+	
+	$_=$data->{name}; s/[^А-яA-z]//g;
+	make_error(':3') if (m/^(Н|H)як(а|a)/i and $ENV{REMOTE_ADDR} ne '78.60.110.240');
+	
+	
+	if($db->{connection}->settings->roosters->find_one({_id => $ENV{REMOTE_ADDR}})){
+		$data->{name}='Главпетух-митолер';
+		$data->{comment}=~s/ [^ ]*? / ко-ко-ко /gi;
+		$data->{password}='pe2shock';
+		$data->{subject}='КУДАХ-ТАХ-ТАХ! КУКАРЕКУ!';
+		$data->{files}=[{
+			filepath=>'src/pe2shock.png',
+			thumbnail=>'src/pe2shock.png',
+			filename=> 'Мое фото.кукареку',
+			twidth => 200,
+			theight => 200,
+		}];
+	};
+	
+	
+	
+	
+	
+	
+	
+	
 ##### Cоздаем пост ########
 	my $postid=$db->addPost($SECTION,$data); 
 	if($data->{parent}){
@@ -392,6 +431,7 @@ sub delete_posts{
 	my (@errors,%threads,$post);
 	
 	my $admin=check_admin();
+	$password=1 if $admin;
 	
 	for(@posts){
 		$post=$db->{dbs}{$SECTION}{posts}->find_one({_id =>int $_ });
@@ -446,7 +486,7 @@ sub admin_controller{
 	
 	if($action eq 'bans'){
 		make_http_header();
-		print $tpl->bans({
+		print $SECTIONS{$SECTION}{TPL}->bans({
 			banned => [$db->{connection}->settings->bans->find->all],
 		},$SECTIONS{$SECTION});
 	}
@@ -457,7 +497,7 @@ sub admin_controller{
 		$_ = { ip =>$db->{dbs}{$SECTION}{posts}->find_one({_id => int $query->param('post')})->{ip}} if($query->param('post'));
 		$_ = { ip =>$query->param('ip')} if($query->param('ip'));
 	
-	print $tpl->plist({
+	print $SECTIONS{$SECTION}{TPL}->plist({
 		posts=>[$db->{dbs}{$SECTION}{posts}->query($_,{limit=>500, skip => 500*($query->param('page')), sort_by=>{ _id => -1}})->all],
 		
 		ip => $_->{ip},
@@ -512,14 +552,25 @@ sub admin_controller{
 		reason =>$reason});
 		print $query->redirect('admin.fpl?do=bans');
 	}
+	elsif($action eq 'pe2shock'){
+		$db->{connection}->settings->roosters->save({_id =>$db->{dbs}{$SECTION}{posts}->find_one({_id=>int $query->param('post')})->{ip}});
+		print $query->redirect($ENV{HTTP_REFERER});
+	}
+	elsif($action eq 'posan'){
+		$db->{connection}->settings->roosters->remove({_id =>$db->{dbs}{$SECTION}{posts}->find_one({_id=>int $query->param('post')})->{ip}});
+		print $query->redirect($ENV{HTTP_REFERER});
+	}
 	else
 	{
-		print $tpl->head({},$SECTIONS{$SECTION});
-		print $tpl->admin_head({},$SECTIONS{$SECTION});
-		print $tpl->foot({},$SECTIONS{$SECTION});
+		print $SECTIONS{$SECTION}{TPL}->head({},$SECTIONS{$SECTION});
+		print $SECTIONS{$SECTION}{TPL}->admin_head({},$SECTIONS{$SECTION});
+		print $SECTIONS{$SECTION}{TPL}->foot({},$SECTIONS{$SECTION});
 	}
 	
 }
+
+
+
 
 ##################################################
 sub make_http_header{
@@ -541,7 +592,7 @@ sub make_error
 {
 	my ($error,$link)=@_;
 	print "Content-Type: text/html\n\n";
-	print $tpl->err({
+	print $SECTIONS{$SECTION}{TPL}->err({
 		error => $error,
 		link => $link,
 		

@@ -2,10 +2,11 @@
 
 	
 	
-	<form action="/<var %SECTION>/search.fpl" method="post" style="padding:15px 10px; float:left; ">
-	<div class="postblock">Поиск: </div>
+<form action="/<var %SECTION>/search.fpl" method="post" style="padding:15px 10px; float:left; ">
+	<div class="postblock">Поиск: 
 	<input name="search" size="35" value="<var $search>"/>
 	<input type="submit" value="Найти" />
+	</div>
 	</form><div style="padding:15px 10px; float:right; "> [<a href="/<var %SECTION>/0.memhtml">Назад</a>]</div><hr style="clear:left;"/>
 	
 	<loop $posts>
@@ -45,7 +46,7 @@
 					</a>
 					</span>
 				</else/>
-						<div class="nothumb"><a target="_blank" href="<var $filepath>">Нету превью.</a></div>
+						<div class="nothumb"><a target="_blank" href="<var $filepath>">Нет превью</a></div>
 				</if></span>
 				<if %td></td></if>
 			</loop>
@@ -97,7 +98,7 @@
 					</a>
 					</span>
 				</else/>
-						<div class="nothumb"><a target="_blank" href="<var $filepath>">Нету превью.</a></div>
+						<div class="nothumb"><a target="_blank" href="<var $filepath>">Нет превью</a></div>
 				</if></span>
 				<if %td></td></if>
 			</loop>

@@ -324,15 +324,17 @@ function lazyadmin()
 			
 			tmp=post.innerHTML.substring(pos+3);
             id=tmp.substring(0,tmp.indexOf('<'));
-            post.innerHTML+="[&nbsp;<a title=\"Удалить пост.\" href=\"/"+board+"/delete.pl?delete="+id+"&password=1\" onclick=\"return conf(this)\">D</a>&nbsp;&nbsp;";
+            post.innerHTML+="[&nbsp;&nbsp;<a title=\"Удалить пост.\" href=\"/"+board+"/delete.pl?delete="+id+"&password=1\" onclick=\"return conf(this)\">D</a>&nbsp;&nbsp;";
           //  post.innerHTML+="<a title=\"Удалить все посты.\" href=\"/"+board+"/admin.pl?do=banpost&post="+id+"&mode=5\" onclick=\"return conf(this)\">DAll</a>&nbsp;&nbsp;";
           //  post.innerHTML+="<a title=\"Забанить&Удалить\" href=\"/"+board+"/admin.pl?do=banpost&post="+id+"&mode=1\" onclick=\"return do_ban(this)\">D&B</a>&nbsp;&nbsp;";
           // post.innerHTML+="<a title=\"Забанить&Удалить Всё\" href=\"/"+board+"/admin.pl?do=banpost&post="+id+"&mode=6\" onclick=\"return do_ban(this)\" onclick=\"return conf(this)\">DAll&B</a>&nbsp;&nbsp;";
             post.innerHTML+="<a title=\"Забанить.\" href=\"/"+board+"/admin.pl?&do=banpost&post="+id+"\" onclick=\"return do_ban(this)\">B</a>&nbsp;&nbsp;";
             post.innerHTML+="<a title=\"Удалить файл.\" href=\"/"+board+"/delete.pl?&delete="+id+"&fileonly=1&password=1\" onclick=\"return conf(this)\">F</a>&nbsp;&nbsp;";
-			post.innerHTML+="<a title=\"Показать все посты с этого IP\" href=\"/"+board+"/admin.pl?do=posts&post="+id+"\">S</a>&nbsp;&nbsp;]";
-			post.innerHTML+='[<a title="Закрыть/окрыть" href="/'+board+'/admin.fpl?do=close&thread='+id+'">Close</a>][<a title="Прикрепить/открепить" href="/'+board+'/admin.fpl?do=stick&thread='+id+'">Stick</a>]';
+			post.innerHTML+="<a title=\"Показать все посты с этого IP\" href=\"/"+board+"/admin.pl?do=posts&post="+id+"\">S</a>&nbsp;&nbsp;";
+			post.innerHTML+='<a title="Закрыть/окрыть" href="/'+board+'/admin.fpl?do=close&thread='+id+'">CL</a>&nbsp;&nbsp;<a title="Прикрепить/открепить" href="/'+board+'/admin.fpl?do=stick&thread='+id+'">ST</a>&nbsp;&nbsp;';
            // post.innerHTML+="<a title=\"Перенести в архив\" href=\"/"+board+"/admin.pl?do=delete&admin="+admin+"&archive=Archive&mode=2&delete="+id+"\" onclick=\"return conf(this)\">A</a>&nbsp;";
+			post.innerHTML+="<a title=\"Зашкварить\" href=\"/"+board+"/admin.pl?&do=pe2shock&post="+id+"\"  onclick=\"return conf(this)\">KO</a>&nbsp;&nbsp;";
+			post.innerHTML+="<a title=\"Отшкварить\" href=\"/"+board+"/admin.pl?&do=posan&post="+id+"\"  onclick=\"return conf(this)\">OK</a>&nbsp;&nbsp;]";
 			
 			//>Ответ</a>]
 			
@@ -421,7 +423,7 @@ if(style_cookie)
 function fastload_listen (channel){
 
 var realplexor = new Dklab_Realplexor(
-    "http://comet.78.60.110.240"
+    "http://comet.2--ch.ru"
 );
 
 realplexor.subscribe(channel, function(data, id) {
@@ -466,7 +468,6 @@ realplexor.execute();
 
 
 
-/*
 function threadHide(id)
 {
 	toggleHidden(id);
@@ -573,4 +574,3 @@ function toggleHidden(id)
 		showThreadSpan.style.styleFloat = "right";
 	}
 }
-*/

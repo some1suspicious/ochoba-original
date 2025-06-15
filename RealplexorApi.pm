@@ -6,17 +6,17 @@ use bytes;
 use JSON::XS;
 ##############
 sub new { 
-	my $self = $_[1];
-	
-	$self->{addr}=sockaddr_in($self->{port},inet_aton($self->{host}));
-	$self->{proto}=getprotobyname('tcp');
-	
-	$self->{json} = JSON::XS->new();
-	$self->{json}->utf8(1);
-	$self->{json}->allow_nonref(1);
+my $self = $_[1];
 
-	bless $self;
-	return $self; 
+$self->{addr}=sockaddr_in($self->{port},inet_aton($self->{host}));
+$self->{proto}=getprotobyname('tcp');
+
+$self->{json} = JSON::XS->new();
+$self->{json}->utf8(1);
+$self->{json}->allow_nonref(1);
+
+bless $self;
+return $self; 
 }
 
 ##############
@@ -46,7 +46,18 @@ sub online{
 }
 
 sub send_data {
-
+	my ($self,$ids,$data,$showonlyfor)=@_;
+	my (@pairs,$k,$v);
+	
+	if(ref($ids) eq 'HASH'){
+		push @pairs, "$v:$k" while(($k,$v)=each %{$ids});
+	}
+	else{
+		push @pairs, $_ for(@{$ids});
+	}
+	if($showonlyfor){push @pairs, '*'.$_ for(@{$showonlyfor});};
+	
+	$self->_send(join(',',@pairs),$self->{json}->encode($data));
 }
 
 
@@ -65,7 +76,7 @@ sub _send{
 	
 	socket(my $socket, PF_INET, SOCK_STREAM, $self->{proto});
 	
-	connect($socket, $self->{addr}) or die "RealplexorApi: Can`t connect to server $self->{host}:$self->{port}!\n";
+	connect($socket, $self->{addr}) or die "RealplexorApi: Can`t connect to server$self->{host}:$self->{port}!\n";
 	
 	send ($socket, $request, 0) or do{warn "RealplexorApi: Can`t send $data !";};
 	
@@ -93,8 +104,7 @@ sub _send{
 			warn 'Response length '.length($body)." is different than specified in Content-Length header $1: possibly broken response\n";
 			return;
 		}
-		
-		return $body;
+	  return $body;
 	}
 	close $socket;
 }
